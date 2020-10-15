@@ -1,0 +1,42 @@
+---
+title: "451Project"
+author: "Ling Ma"
+date: "10/8/2020"
+output: html_document
+---
+# Data Preprocessing
+```{r}
+# Loading
+library(dplyr)
+library(naniar)
+```
+
+`ODA`: official development assistance
+`OOF`: Other Official Flows
+`aid_total`:total aid
+`polity2`:Recipient Polity Score,  "-10 (hereditary monarchy) to +10 (consolidated democracy)"
+`oda_gni`: ODA in percentage in gross national income
+`gdp_percap_real`:Recipient GDP Per Capita
+
+`population`: Recipient Population
+`recipient_trade_world`:Recipient Total Trade with World
+`gdp_per_growth`: GDP per capita growth
+`GDP_total_growth`: GDP total growth
+
+```{r pressure, echo=FALSE}
+data = read.csv("processed.csv")
+data
+```
+First, let's visualize the distribution of the missing data.
+```{r}
+vis_miss(data)
+vis_miss(data,cluster = TRUE)
+```
+
+# U.S. impact on recipents
+
+```{r}
+usdata = data %>%
+  select(-Chinese_ODA,-Chinese_aid_total)
+```
+for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
