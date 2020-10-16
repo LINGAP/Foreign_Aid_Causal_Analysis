@@ -35,8 +35,13 @@ vis_miss(data,cluster = TRUE)
 
 # U.S. impact on recipents
 
+we decide to drop the observations that have missing values for the following reason:
+1. "MNAR: Missing Not at Random - the missing is not random, it correlates with unobservable characteristics unknown to a researcher."
+2. we still have 80% data left.
+
 ```{r}
 usdata = data %>%
-  select(-Chinese_ODA,-Chinese_aid_total)
+  select(-Chinese_ODA,-Chinese_aid_total) %>%
+  na.omit(data)
 ```
-for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
+
