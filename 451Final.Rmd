@@ -46,40 +46,41 @@ vis_miss(aid,cluster = TRUE)
 # Regression Analysis
 ## Initial visualization 
 
-## The impact of Chinese Foreign Aid on recipients
+## The impact of U.S Foreign Aid on recipients
 ```{r}
-ggplot(data = aid, aes(x = Chinese_aid_total, y = GDP_total_growth))+
+ggplot(data = aid, aes(x = US_aid_total, y = GDP_total_growth))+
   geom_point()
 ```
 ## Naive Model
 ```{r}
-China_lm <- lm(as.numeric(GDP_total_growth) ~ Chinese_aid_total, data = aid)
+US_lm <- lm(as.numeric(GDP_total_growth) ~ US_aid_total, data = aid)
 ```
 
+## Mixed effect Model
 ```{r}
-China <- lmer(as.numeric(GDP_total_growth) ~ Chinese_aid_total + (1 | country), data = aid)
-summary(China)
-confint(China)
+US <- lmer(as.numeric(GDP_total_growth) ~ US_aid_total + (1 | country), data = aid)
+summary(US)
+confint(US)
 ```
 ```{r}
-re <- ranef(China)$country
+re <- ranef(US)$country
 
 ```
 
 
 ```{r}
-predictInterval(China)   # for various model predictions, possibly with new data
+predictInterval(US)   # for various model predictions, possibly with new data
 
-REsim(China)             # mean, median and sd of the random effect estimates
+REsim(US)             # mean, median and sd of the random effect estimates
 
-plotREsim(REsim(China))  # plot the interval estimates
+plotREsim(REsim(US))  # plot the interval estimates
 ```
 
 ## Prediction
 ```{r}
-predict_no_re <- predict(China, re.form=NA)
-predict_lm <- predict(China_lm)
-predict_with_re <- predict(China)
+predict_no_re <- predict(US, re.form=NA)
+predict_lm <- predict(US_lm)
+predict_with_re <- predict(US)
 ```
 
 
