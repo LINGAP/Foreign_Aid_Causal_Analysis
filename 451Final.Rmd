@@ -5,14 +5,15 @@ date: "10/8/2020"
 output: html_document
 ---
 # Data Preprocessing
+
 ```{r}
 # Loading
 library(dplyr)
 library(naniar)
 library(lme4)
 library(ggplot2)
-library(merTools) #we use this package because we need to use the "predictInterval" function
 library(dagitty)
+library(merTools) #we use this package because we need to use the "predictInterval" function
 ```
 
 `ODA`: official development assistance
@@ -41,7 +42,6 @@ we decide to drop the observations that have missing values for the following re
 2. we still have 80% data left.
 ```{r}
 aid = aid %>%
-  select(-Chinese_ODA,-Chinese_aid_total) %>%
   na.omit(aid)
 ```
 
@@ -151,26 +151,6 @@ predict_no_re <- predict(US, re.form=NA)
 predict_lm <- predict(US_lm)
 predict_with_re <- predict(US)
 ```
-
-<<<<<<< HEAD
-=======
-
-
-
-
-# Sensitivity Analysis
-for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
-
-
-
-
-
-
-
-
-
-
->>>>>>> 4772d3a394914af99fc40e1d157c1c30b10ab709
 
 
 
