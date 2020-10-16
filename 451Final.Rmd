@@ -43,14 +43,16 @@ vis_miss(aid,cluster = TRUE)
 ## Our Model
 
 
+
 # Regression Analysis
 ## Initial visualization 
-
-## The impact of U.S Foreign Aid on recipients
 ```{r}
 ggplot(data = aid, aes(x = US_aid_total, y = GDP_total_growth))+
   geom_point()
 ```
+
+## The impact of U.S Foreign Aid on recipients
+
 ## Naive Model
 ```{r}
 US_lm <- lm(as.numeric(GDP_total_growth) ~ US_aid_total, data = aid)
@@ -64,7 +66,6 @@ confint(US)
 ```
 ```{r}
 re <- ranef(US)$country
-
 ```
 
 
@@ -86,12 +87,8 @@ predict_with_re <- predict(US)
 
 
 
-# U.S. impact on recipents
 
-```{r}
-usdata = data %>%
-  select(-Chinese_ODA,-Chinese_aid_total)
-```
+# Sensitivity Analysis
 for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
 
 
