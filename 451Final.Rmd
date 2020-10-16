@@ -1,6 +1,6 @@
 ---
 title: "451Project"
-author: "Ling Ma"
+author: "Ling Ma, Debbie Sun"
 date: "10/8/2020"
 output: html_document
 ---
@@ -9,6 +9,9 @@ output: html_document
 # Loading
 library(dplyr)
 library(naniar)
+library(lme4)
+library(ggplot2)
+library(merTools) #we use this package because we need to use the "predictInterval" function
 ```
 
 `ODA`: official development assistance
@@ -24,14 +27,66 @@ library(naniar)
 `GDP_total_growth`: GDP total growth
 
 ```{r pressure, echo=FALSE}
-data = read.csv("processed.csv")
-data
+aid = read.csv("processed.csv")
+aid
 ```
 First, let's visualize the distribution of the missing data.
 ```{r}
-vis_miss(data)
-vis_miss(data,cluster = TRUE)
+vis_miss(aid)
+vis_miss(aid,cluster = TRUE)
 ```
+
+# Mixed Effect Model
+
+## What is random effect and fixed effect?
+
+## Our Model
+
+
+# Regression Analysis
+## Initial visualization 
+
+## The impact of Chinese Foreign Aid on recipients
+```{r}
+ggplot(data = aid, aes(x = Chinese_aid_total, y = GDP_total_growth))+
+  geom_point()
+```
+## Naive Model
+```{r}
+China_lm <- lm(as.numeric(GDP_total_growth) ~ Chinese_aid_total, data = aid)
+```
+
+```{r}
+China <- lmer(as.numeric(GDP_total_growth) ~ Chinese_aid_total + (1 | country), data = aid)
+summary(China)
+confint(China)
+```
+```{r}
+re <- ranef(China)$country
+
+```
+
+
+```{r}
+predictInterval(China)   # for various model predictions, possibly with new data
+
+REsim(China)             # mean, median and sd of the random effect estimates
+
+plotREsim(REsim(China))  # plot the interval estimates
+```
+
+## Prediction
+```{r}
+predict_no_re <- predict(China, re.form=NA)
+predict_lm <- predict(China_lm)
+predict_with_re <- predict(China)
+```
+
+```{r}
+
+```
+
+
 
 # U.S. impact on recipents
 
@@ -40,3 +95,30 @@ usdata = data %>%
   select(-Chinese_ODA,-Chinese_aid_total)
 ```
 for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
