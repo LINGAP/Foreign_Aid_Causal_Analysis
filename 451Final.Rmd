@@ -1,6 +1,6 @@
 ---
 title: "451Project"
-author: "Ling Ma"
+author: "Ling Ma, Debbie Sun"
 date: "10/8/2020"
 output: html_document
 ---
@@ -9,6 +9,10 @@ output: html_document
 # Loading
 library(dplyr)
 library(naniar)
+library(lme4)
+library(ggplot2)
+library(merTools) #we use this package because we need to use the "predictInterval" function
+library(dagitty)
 ```
 
 `ODA`: official development assistance
@@ -18,30 +22,148 @@ library(naniar)
 `oda_gni`: ODA in percentage in gross national income
 `gdp_percap_real`:Recipient GDP Per Capita
 
-`population`: Recipient Population
+`population`: Recipient Population (a-b)/b
 `recipient_trade_world`:Recipient Total Trade with World
-`gdp_per_growth`: GDP per capita growth
+`gdp_per_growth`: GDP per capita growth (a-b)/b
 `GDP_total_growth`: GDP total growth
 
 ```{r pressure, echo=FALSE}
-data = read.csv("processed.csv")
-data
+aid = read.csv("processed.csv")
+head(aid)
 ```
 First, let's visualize the distribution of the missing data.
 ```{r}
-vis_miss(data)
-vis_miss(data,cluster = TRUE)
+vis_miss(aid)
+vis_miss(aid,cluster = TRUE)
 ```
-
-# U.S. impact on recipents
-
 we decide to drop the observations that have missing values for the following reason:
 1. "MNAR: Missing Not at Random - the missing is not random, it correlates with unobservable characteristics unknown to a researcher."
 2. we still have 80% data left.
+```{r}
+aid = aid %>%
+  select(-Chinese_ODA,-Chinese_aid_total) %>%
+  na.omit(aid)
+```
 
 ```{r}
-usdata = data %>%
-  select(-Chinese_ODA,-Chinese_aid_total) %>%
-  na.omit(data)
+dag <- dagitty("
+dag {
+bb=\"0,0,1,1\"
+\"A:US_ODA\" [exposure,pos=\"0.272,0.239\"]
+\"Y:Recipient_GDP_growth_rate\" [outcome,pos=\"0.672,0.254\"]
+national_demand [latent,pos=\"0.540,0.050\"]
+oda_gni [pos=\"0.446,0.310\"]
+polity2 [pos=\"0.357,0.039\"]
+population_growth_rate [pos=\"0.651,0.028\"]
+recipient_trade_world [pos=\"0.412,0.504\"]
+rest_world_aid [pos=\"0.397,0.159\"]
+\"A:US_ODA\" -> \"Y:Recipient_GDP_growth_rate\"
+\"A:US_ODA\" -> oda_gni
+national_demand -> \"Y:Recipient_GDP_growth_rate\"
+national_demand -> oda_gni
+national_demand -> recipient_trade_world
+oda_gni -> \"Y:Recipient_GDP_growth_rate\"
+polity2 -> \"A:US_ODA\"
+polity2 -> \"Y:Recipient_GDP_growth_rate\"
+polity2 -> national_demand
+polity2 -> rest_world_aid
+population_growth_rate -> \"Y:Recipient_GDP_growth_rate\"
+population_growth_rate -> national_demand
+recipient_trade_world -> \"A:US_ODA\"
+recipient_trade_world -> \"Y:Recipient_GDP_growth_rate\"
+recipient_trade_world -> rest_world_aid
+rest_world_aid -> \"Y:Recipient_GDP_growth_rate\"
+rest_world_aid -> oda_gni
+}
+")
+plot(dag)
 ```
+![](causal_graph.png)
+
+# Causal Discovery
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Mixed Effect Model
+
+## What is random effect and fixed effect?
+
+## Our Model
+
+
+# Regression Analysis
+## Initial visualization 
+
+## The impact of Chinese Foreign Aid on recipients
+```{r}
+ggplot(data = aid, aes(x = Chinese_aid_total, y = GDP_total_growth))+
+  geom_point()
+```
+## Naive Model
+```{r}
+China_lm <- lm(as.numeric(GDP_total_growth) ~ Chinese_aid_total, data = aid)
+```
+
+```{r}
+China <- lmer(as.numeric(GDP_total_growth) ~ Chinese_aid_total + (1 | country), data = aid)
+summary(China)
+confint(China)
+```
+```{r}
+re <- ranef(China)$country
+
+```
+
+
+```{r}
+predictInterval(China)   # for various model predictions, possibly with new data
+
+REsim(China)             # mean, median and sd of the random effect estimates
+
+plotREsim(REsim(China))  # plot the interval estimates
+```
+
+## Prediction
+```{r}
+predict_no_re <- predict(China, re.form=NA)
+predict_lm <- predict(China_lm)
+predict_with_re <- predict(China)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
