@@ -82,9 +82,6 @@ predict_lm <- predict(China_lm)
 predict_with_re <- predict(China)
 ```
 
-```{r}
-
-```
 
 
 
