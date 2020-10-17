@@ -41,8 +41,13 @@ we decide to drop the observations that have missing values for the following re
 2. we still have 80% data left.
 ```{r}
 aid = aid %>%
-  select(-Chinese_ODA,-Chinese_aid_total) %>%
   na.omit(aid)
+
+aid2007 = aid %>%
+  filter(year==2007)
+
+aid2012 = aid %>%
+  filter(year==2012)
 ```
 
 ```{r}
@@ -154,25 +159,10 @@ plot(dag)
 # predict_with_re <- predict(US)
 ```
 
-<<<<<<< HEAD
-=======
 
 
 
 
-# Sensitivity Analysis
-for sensitivity analysis, we will try 1)drop the observations that have missing values. 2)
-
-
-
-
-
-
-
-
-
-
->>>>>>> 4772d3a394914af99fc40e1d157c1c30b10ab709
 
 
 
