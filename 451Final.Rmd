@@ -9,15 +9,16 @@ output: html_document
 # Loading
 library(dplyr)
 library(naniar)
+library(pcalg)
 library(lme4)
 library(ggplot2)
 library(merTools) #we use this package because we need to use the "predictInterval" function
 library(dagitty)
 ```
 
-`ODA`: official development assistance
-`OOF`: Other Official Flows
-`aid_total`:total aid
+`US_ODA`: `A`(treatment), the amount of foreign aid given by the U.S. 
+`US_OOF`: Other Official Flows
+`US_aid_total`:total aid
 `polity2`:Recipient Polity Score,  "-10 (hereditary monarchy) to +10 (consolidated democracy)"
 `oda_gni`: ODA in percentage in gross national income
 `gdp_percap_real`:Recipient GDP Per Capita
@@ -29,6 +30,7 @@ library(dagitty)
 
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
+aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
 head(aid)
 ```
 First, let's visualize the distribution of the missing data.
@@ -49,6 +51,12 @@ aid2007 = aid %>%
 aid2012 = aid %>%
   filter(year==2012)
 ```
+
+![](causal_graph.png)
+
+
+# Causal Discovery
+
 
 ```{r}
 dag <- dagitty("
@@ -83,22 +91,37 @@ rest_world_aid -> oda_gni
 ")
 plot(dag)
 ```
-![](causal_graph.png)
+The causal graph is constructed based on our prior assumptions and common sense:
 
-# Causal Discovery
+1. The outcome(Y: GDP growth rate of the recipient) depends on the national demand, population growth rate, the foreign aid received, potentially its autocracy-democracy index(polity2), and the recipient’s openness (measured by its global trade).
 
+2. We assume that our treatment, US ODA, affect the outcome via direct effect(the recipient receives the aid) and indirect effect of ODA_GNI. The idea for GNI is that given the same amount of foreign aid, if the aid amounts to a large portion of the recipient’s gross national income, this aid should have a larger impact on the recipient. A similar idea applies to the foreign aid provided by the rest of the world.
 
+3. We assume the recipient country’s openness to global trading contributes to not only GDP growth but also the amount of aid it’s going to receive. The rationale behind the assumption is the potential economic welfare gains from an aid could strongly motivate the donor. For example, the donor might want to have an impact on, or take a share of, the recipient’s market. Finally, we think it’s reasonable to assume that national demand affects the recipient’s global trade.
 
-
-
-
-
-
+4. The assumption we made polity2 a confounder that has an impact on a wide range of other variables. The rationale behind this assumption is that the donors might also be motivated by enlarging their political impact on the recipient, such as winning over political support. 
 
 
+### alpha = 0.01
+```{r}
+causalAid = aid2012 %>%
+  dplyr::select(-X,-country,-year)
+suff_stat <- list(C = cor(causalAid), n = nrow(causalAid))
+pc_aid <- pc(suff_stat, indepTest = gaussCItest, labels = colnames(causalAid), alpha = 0.01, skel.method = "stable.fast")
 
+plot(pc_aid, main = "")
+```
 
+With a threshold of 0.01, the outcome is entirely seperated from the rest of variables. Therefore, we believe 0.01 is too strict and thus relax it to 0.05.
 
+### alpha=0.05
+```{r}
+pc_aid <- pc(suff_stat, indepTest = gaussCItest, labels = colnames(causalAid), alpha = 0.05, skel.method = "stable.fast")
+plot(pc_aid, main = "")
+```
+1. we are surprised to see polity2 is independent of all other variables. We suspect that we didn’t properly impute polity2.
+
+2. to our surprise, there is no direct causal flow between world total aid and recipient’s growth. 
 
 
 
