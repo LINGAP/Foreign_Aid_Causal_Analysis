@@ -5,7 +5,7 @@ date: "10/8/2020"
 output: html_document
 ---
 # Data Preprocessing
-```{r}
+```{r,message=FALSE}
 # Loading
 library(dplyr)
 library(naniar)
@@ -132,6 +132,8 @@ US <- lmer(as.numeric(GDP_total_growth) ~ US_aid_total + (1 | country), data = a
 summary(US)
 confint(US)
 ```
+
+
 ```{r}
 re <- ranef(US)$country
 ```
