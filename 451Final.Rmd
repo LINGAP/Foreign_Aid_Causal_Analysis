@@ -15,18 +15,23 @@ library(ggplot2)
 library(merTools) #we use this package because we need to use the "predictInterval" function
 library(dagitty)
 ```
++ `country`: recipient country
++ `year`: year
++ `US_ODA`: U.S. Official development assistance(treatment), defined as government aid designed to promote the economic development and welfare of developing countries[1]. 
++ `US_OOF`: U.S. Other Official Flows, transactions by the official sector with countries on the List of Aid Recipients which do not meet the conditions for eligibility as Official Development Assistance or Official Aid. 
++ `US_aid_total`: U.S. total aid the recipient received.
++ `Rest_of_world_ODA`: ODA except for U.S. and China(data of China is largely missing) the recipient received.
++ `Rest_of_world_OOF`: OOF except for U.S. and China(data of China is largely missing) the recipient received.
++ `Rest_of_world_aid_total`: rest of world total recipient received.
++ `polity2`:Recipient Polity Score,  "-10 (hereditary monarchy) to +10 (consolidated democracy)"
++ `oda_gni`: ODA in percentage in gross national income of the recipient's.
++ `population`:the total population of the recipient in that year.
++ `recipient_trade_world`:Recipient Total Trade with World
++ `GDP_per_growth_rate`: Recipient's GDP Per Capita growth rate, calculated by (this year - previous year)/previous year.
++ `GDP_total_growth_rate`: Recipient's total GDP growth rate, calculated by (this year - previous year)/previous year.
++ `population_growth_rate`: Recipient's Population growth rate, calculated by (this year - previous year)/previous year.
 
-`US_ODA`: `A`(treatment), the amount of foreign aid given by the U.S. 
-`US_OOF`: Other Official Flows
-`US_aid_total`:total aid
-`polity2`:Recipient Polity Score,  "-10 (hereditary monarchy) to +10 (consolidated democracy)"
-`oda_gni`: ODA in percentage in gross national income
-`gdp_percap_real`:Recipient GDP Per Capita
 
-`population`: Recipient Population (a-b)/b
-`recipient_trade_world`:Recipient Total Trade with World
-`gdp_per_growth`: GDP per capita growth (a-b)/b
-`GDP_total_growth`: GDP total growth
 
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
@@ -39,8 +44,11 @@ vis_miss(aid)
 vis_miss(aid,cluster = TRUE)
 ```
 we decide to drop the observations that have missing values for the following reason:
-1. "MNAR: Missing Not at Random - the missing is not random, it correlates with unobservable characteristics unknown to a researcher."
-2. we still have 80% data left.
+1. "MNAR: Missing Not at Random - the missing is not random, it correlates with unobservable characteristics unknown to a researcher." The missing rows gather around the last 400 rows, so we cannot assume the missing is at random. 
+2. we can afford to drop 7.7% of the original data as we still have 92.3% data left.
+
+To get away with the time correlated concern, we decide to base our analysis on 2007 and 2012 because they have the least missing data. We conduct analysis on one of them, and use the result of the other one  to compare, which serves as a part of sensitive analysis to test the robustness of the former.
+
 ```{r}
 aid = aid %>%
   na.omit(aid)
@@ -58,7 +66,7 @@ aid2012 = aid %>%
 # Causal Discovery
 
 
-```{r}
+```{r echo=FALSE}
 dag <- dagitty("
 dag {
 bb=\"0,0,1,1\"
@@ -119,6 +127,7 @@ With a threshold of 0.01, the outcome is entirely seperated from the rest of var
 pc_aid <- pc(suff_stat, indepTest = gaussCItest, labels = colnames(causalAid), alpha = 0.05, skel.method = "stable.fast")
 plot(pc_aid, main = "")
 ```
+
 1. we are surprised to see polity2 is independent of all other variables. We suspect that we didn’t properly impute polity2.
 
 2. to our surprise, there is no direct causal flow between world total aid and recipient’s growth. 
@@ -184,7 +193,9 @@ plot(pc_aid, main = "")
 
 
 
+# Reference
 
+1. Official development assistance (ODA) - Net ODA - OECD Data. (n.d.). Retrieved October 18, 2020, from https://data.oecd.org/oda/net-oda.htm
 
 
 
