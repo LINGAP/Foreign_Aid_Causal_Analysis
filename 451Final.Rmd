@@ -9,10 +9,7 @@ output: html_document
 # Loading
 library(dplyr)
 library(naniar)
-library(pcalg)
-library(lme4)
 library(ggplot2)
-library(merTools) #we use this package because we need to use the "predictInterval" function
 library(dagitty)
 ```
 + `country`: recipient country
@@ -141,55 +138,37 @@ plot(pc_aid, main = "")
 
 
 
-# Mixed Effect Model
-
-## What is random effect and fixed effect?
-
-## Our Model
-
-
-
-# Regression Analysis
-## Initial visualization 
+# Regression Model
+## Initial Visualization
+GDP growth rate vs. US foreign aid (Treatment vs. Outcome)
 ```{r}
-# ggplot(data = aid, aes(x = US_aid_total, y = GDP_total_growth))+
-#   geom_point()
+ggplot(data = aid2007,aes(y = GDP_total_growth_rate,x = US_aid_total))+
+  geom_smooth()
 ```
 
-## The impact of U.S Foreign Aid on recipients
+Other variables vs. Outcome
 
-## Naive Model
 ```{r}
-#US_lm <- lm(as.numeric(GDP_total_growth) ~ US_aid_total, data = aid)
-```
-
-## Mixed effect Model
-```{r}
-# US <- lmer(as.numeric(GDP_total_growth) ~ US_aid_total + (1 | country), data = aid)
-# summary(US)
-# confint(US)
+ggplot(aid2007, aes(x = US_aid_total, y = GDP_total_growth_rate, color = population_growth_rate)) + 
+  geom_point()
 ```
 
 
+## Regression Model
 ```{r}
-#re <- ranef(US)$country
+mod <- lm(GDP_per_growth_rate~US_aid_total + oda_gni+recipient_trade_world+polity2+population_growth_rate+Rest_of_world_aid_total,data = aid2007)
+summary(mod)
+confint(mod)
 ```
 
 
-```{r}
-# predictInterval(US)   # for various model predictions, possibly with new data
-# 
-# REsim(US)             # mean, median and sd of the random effect estimates
-# 
-# plotREsim(REsim(US))  # plot the interval estimates
-```
+# Sensivity Analysis
 
-## Prediction
-```{r}
-# predict_no_re <- predict(US, re.form=NA)
-# predict_lm <- predict(US_lm)
-# predict_with_re <- predict(US)
-```
+## Different Year (2012)
+
+
+## Another Measurement of Economic growth
+
 
 
 
