@@ -9,6 +9,7 @@ output: html_document
 # Loading
 library(dplyr)
 library(naniar)
+library(pcalg)
 library(ggplot2)
 library(dagitty)
 ```
@@ -142,24 +143,29 @@ plot(pc_aid, main = "")
 ## Initial Visualization
 GDP growth rate vs. US foreign aid (Treatment vs. Outcome)
 ```{r}
-ggplot(data = aid2007,aes(y = GDP_total_growth_rate,x = US_aid_total))+
+ggplot(data = aid2007,aes(y = GDP_total_growth_rate,x = log(US_aid_total)))+
+  geom_point()+
   geom_smooth()
 ```
 
 Other variables vs. Outcome
 
 ```{r}
-ggplot(aid2007, aes(x = US_aid_total, y = GDP_total_growth_rate, color = population_growth_rate)) + 
-  geom_point()
+ggplot(aid2007, aes(  y = GDP_total_growth_rate, x = population_growth_rate)) + 
+  geom_point()+
+  geom_smooth(
+    
+  )
 ```
 
 
 ## Regression Model
 ```{r}
-mod <- lm(GDP_per_growth_rate~US_aid_total + oda_gni+recipient_trade_world+polity2+population_growth_rate+Rest_of_world_aid_total,data = aid2007)
+mod <- lm(GDP_total_growth_rate~ US_aid_total +recipient_trade_world+polity2+population_growth_rate,data = aid2007)
 summary(mod)
 confint(mod)
 ```
+
 
 
 # Sensivity Analysis
@@ -169,6 +175,9 @@ confint(mod)
 
 ## Another Measurement of Economic growth
 
+
+
+# Limitations 
 
 
 
