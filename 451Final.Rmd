@@ -32,7 +32,6 @@ library(dagitty)
 + `population_growth_rate`: Recipient's Population growth rate, calculated by (this year - previous year)/previous year.
 
 
-
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
 aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
@@ -111,6 +110,7 @@ The causal graph is constructed based on our prior assumptions and common sense:
 
 
 ### alpha = 0.01
+
 ```{r}
 causalAid = aid2012 %>%
   dplyr::select(-X,-country,-year)
@@ -128,17 +128,26 @@ pc_aid <- pc(suff_stat, indepTest = gaussCItest, labels = colnames(causalAid), a
 plot(pc_aid, main = "")
 ```
 
-1. we are surprised to see polity2 is independent of all other variables. We suspect that we didn’t properly impute polity2.
+### alpha=0.12
+```{r}
+pc_aid <- pc(suff_stat, indepTest = gaussCItest, labels = colnames(causalAid), alpha = 0.12, skel.method = "stable.fast")
+plot(pc_aid, main = "")
+```
 
-2. to our surprise, there is no direct causal flow between world total aid and recipient’s growth. 
+Comparing the resulted causal graph with our assumptions, we spot the following causal flow that we didn't identify before:
 
+>
+1. it's mainly ODA, instead of OOF, that contributes to other variables. For example, the graph shows that US_ODA has a direct effect on popolucation growth rate, which stimulates GDP growth. Rest_of_Work_ODA also contributes to population, which directly affects recipient's world trade. 
+2. US_ODA has a direct effect on Rest_of_Work_ODA, which motivates us to visualize their relation to see if they might be interactive terms.
+3. oda_gni directly affects recipient_trade_world.
 
+As we relax the treshold from 0.01 to 0.12, there are a few changes we think might be of interests:
 
+>
+1. when threshold is 0.01, recipient_trade_world contributes to population. When threshold increases, it's polulation contributes to recipient_trade_world. Therefore, both directions worth exploring in our later sensitivity analysis.
+2. when threshold increases to 0.12, polity2 is considered to contribute to population growth. 
 
-
-
-
-
+It appears that the way variables affect the outcome is via population growth.
 
 
 # Mixed Effect Model
