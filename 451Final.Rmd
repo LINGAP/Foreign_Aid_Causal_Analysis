@@ -136,7 +136,7 @@ Comparing the resulted causal graph with our assumptions, we spot the following 
 
 >
 1. it's mainly ODA, instead of OOF, that contributes to other variables. For example, the graph shows that US_ODA has a direct effect on popolucation growth rate, which stimulates GDP growth. Rest_of_Work_ODA also contributes to population, which directly affects recipient's world trade. 
-2. US_ODA has a direct effect on Rest_of_Work_ODA, which motivates us to visualize their relation to see if they might be interactive terms.
+2. US_ODA has a direct effect on Rest_of_Work_ODA.
 3. oda_gni directly affects recipient_trade_world.
 
 As we relax the treshold from 0.01 to 0.12, there are a few changes we think might be of interests:
@@ -147,6 +147,48 @@ As we relax the treshold from 0.01 to 0.12, there are a few changes we think mig
 
 It appears that the way variables affect the outcome is via population growth.
 
+# Visualization
+
+### How GDP_total_growth_rate is affected by US_ODA and Rest_of_world_ODA
+
+```{r}
+ggplot(data = causalAid, aes(x = US_ODA, y = GDP_total_growth_rate)) +
+    geom_point(aes(color = Rest_of_world_ODA), size = 2) +
+    geom_smooth(se = FALSE, color = "blue")+
+    geom_smooth(formula = y~ns(x,3), method = "lm",
+        se = FALSE, color = "red"
+    )+
+  coord_cartesian(xlim = c(0,1000))+
+  scale_color_gradient(low = "yellow", high = "darkblue")
+```
+
+From the plot, we can tell `U.S. ODA` and `rest of world ODA` are correlated, which verifies the causal graph above.
+We vaguely get a sense that both world ODA and U.S. ODA positively contribute to GDP total growth rate.
+
+### Does Rest_of_world_ODA_total affect the outcome?
+
+```{r}
+ggplot(data = causalAid, aes(x = Rest_of_world_aid_total, y = GDP_total_growth_rate)) +
+    geom_point() +
+    geom_smooth(se = FALSE, color = "blue")+
+    geom_smooth(formula = y~ns(x,2), method = "lm",
+        se = FALSE, color = "red"
+    )
+```
+
+Earlier, we didn't see a causal flow from `rest of world aid` to the outcome, which is implausible from common sense. However, this graph suggests we are still justified to believe `rest of world aid` might open another causal graph .
+
+### Does polity2 interact with US_ODA?
+
+```{r}
+ggplot(data = causalAid, aes(x = US_ODA, y =polity2 )) +
+    geom_point(aes(color = GDP_total_growth_rate), size = 2) +
+  scale_color_gradient(low = "yellow", high = "darkblue")+
+    geom_smooth(se = FALSE, color = "blue")+
+  coord_cartesian(xlim = c(0,1000))
+```
+
+The colored scatter points don't seem to form a clear pattern. Therefore we don't assume an interaction between polity2 and US_ODA.
 
 # Regression Model
 ## Initial Visualization
@@ -178,6 +220,9 @@ confint(mod)
 
 
 # Sensivity Analysis
+
+## Unmeasured Variable
+
 
 ## Different Year (2012)
 
