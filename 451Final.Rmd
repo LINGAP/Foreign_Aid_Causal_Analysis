@@ -60,10 +60,6 @@ aid2012 = aid %>%
 
 ![](causal_graph.png)
 
-
-# Causal Discovery
-
-
 ```{r echo=FALSE}
 dag <- dagitty("
 dag {
@@ -107,6 +103,11 @@ The causal graph is constructed based on our prior assumptions and common sense:
 
 4. The assumption we made polity2 a confounder that has an impact on a wide range of other variables. The rationale behind this assumption is that the donors might also be motivated by enlarging their political impact on the recipient, such as winning over political support. 
 
+# Causal Discovery
+
+The causal graph was constructed based on our prior knowledge, which entails that the relationship assumed could be inaccurate. Therefore, we adopt causal discovery algorithm to generate causal graphs which help us identify causal flows.
+
+The core idea of the algorithm is that if conditional on all possible sets of other variables, there remains a significant relationship between variable A and B, then there exists a direct causal association between them. The direction of the arrow is determined by controlling 
 
 ### alpha = 0.01
 
@@ -207,7 +208,7 @@ In this graph, we can see that association between U.S aid and politics score is
 
 ### Informed by causal discovery graph
 
-Informed by rge causal discovery algorithm, we also explore the relationship between US_ODA and other variables. In the below section, we visualize the relationships that are suggested by the causal discovery algorithm.
+Informed by the causal discovery algorithm, we also explore the relationship between US_ODA and other variables. In the below section, we visualize the relationships that are suggested by the causal discovery algorithm.
 
 #####  US_ODA as treatment to replace US_aid_total 
 
@@ -217,9 +218,6 @@ How GDP_total_growth_rate is affected by US_ODA and Rest_of_world_ODA?
 ggplot(data = causalAid, aes(x = US_ODA, y = GDP_total_growth_rate)) +
     geom_point(aes(color = Rest_of_world_ODA), size = 2) +
     geom_smooth(se = FALSE, color = "blue")+
-    geom_smooth(formula = y~ns(x,3), method = "lm",
-        se = FALSE, color = "red"
-    )+
   coord_cartesian(xlim = c(0,1000))+
   scale_color_gradient(low = "yellow", high = "darkblue")
 ```
@@ -335,15 +333,15 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
 # Begin the sensitivity analysis
 
 # Fit required models for the sensitivity analysis
-mod_A <- lm(US_ODA ~ ns(polity2,3), data = aid2007)
-mod_Y <- lm(GDP_total_growth_rate ~US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3), data = aid2007)
+mod_A <- lm(US_ODA ~ ns(polity2,3)+recipient_trade_world, data = aid2007)
+mod_Y <- lm(GDP_total_growth_rate ~US_ODA +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3), data = aid2007)
 
 # Set up degree of association between U and A and between U and Y
 # The U->A associations have some constraints: we set up values 
 # for the U->A associations that are at most equal to the
 # standard deviation of the residuals from the model for A.
-U_A_assocs <- seq(from = 0.01, to = sigma(mod_A), length.out = 10)
-U_Y_assocs <- seq(from = -5, to = -0.5, by = 0.5)
+U_A_assocs <- seq(from = 1, to = sigma(mod_A)/10, length.out = 10)
+U_Y_assocs <- seq(from = -5, to = -1, by = 1)
 
 # Form all combinations of the U->A and U->Y sensitivity parameters
 sens_data <- expand.grid(U_A = U_A_assocs, U_Y = U_Y_assocs)
