@@ -12,6 +12,7 @@ library(naniar)
 library(pcalg)
 library(ggplot2)
 library(dagitty)
+library("splines")
 ```
 + `country`: recipient country
 + `year`: year
@@ -190,33 +191,95 @@ ggplot(data = causalAid, aes(x = US_ODA, y =polity2 )) +
 
 The colored scatter points don't seem to form a clear pattern. Therefore we don't assume an interaction between polity2 and US_ODA.
 
+
+
 # Regression Model
+
+Before we construct the regression model, we would first want to visualize the association between U.S aid and other controlled variables in our model. The goal of visualization is to find out if the association is linear or not and if we should introduce the nonlinearity into our model. 
 ## Initial Visualization
 GDP growth rate vs. US foreign aid (Treatment vs. Outcome)
 ```{r}
-ggplot(data = aid2007,aes(y = GDP_total_growth_rate,x = log(US_aid_total)))+
+ggplot(data = aid2007,aes(x = GDP_total_growth_rate,y = log(US_aid_total)))+
   geom_point()+
   geom_smooth()
 ```
 
-Other variables vs. Outcome
+According to the graph, the relatively flat slope suggests that we might not expect there is a statistical significant association between U.S aid and the GDP growth rate.
+
+Other variables vs. U.S aid
+
+For all graphs below, blue lines are dervied from the actual data, providing insights on how a variable affects if one receives the treatment or not. The red lines are used to depict that relationship.
+
+1. Population growth rate vs. U.S aid
 
 ```{r}
-ggplot(aid2007, aes(  y = GDP_total_growth_rate, x = population_growth_rate)) + 
-  geom_point()+
-  geom_smooth(
-    
-  )
+ggplot(data = aid2007, aes(x = population_growth_rate, y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,3), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
 ```
+
+According to the graph above, we might incorporate population growth rate as an non-linear variable in our model. 
+
+2. Trade balance of recipient countries vs. U.S aid
+
+```{r}
+ggplot(data = aid2007, aes(x = log(recipient_trade_world), y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,1), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+Since the trade balance of recipient countries is relative big number compared to the foreign aid, we want to use the natural log of the trade balance so that we are able to see numbers on the same scale; also, our analysis would not misled by the big numbers. In this graph, we can see that the natural log of trade balance of recipient countries is relatively linear; therefore, we would want to use linear association for this variable. 
+
+3. Politics score vs. U.S aid
+
+```{r}
+ggplot(data = aid2007, aes(x = polity2, y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,3), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+In this graph, we can see that association between U.S aid and politics score is non-linear; therefore, this variable should also be non-linear in our model.
+
 
 
 ## Regression Model
+
+### Regression Results and Interpretation
+
 ```{r}
-mod <- lm(GDP_total_growth_rate~ US_aid_total +recipient_trade_world+polity2+population_growth_rate,data = aid2007)
+mod<-lm(GDP_total_growth_rate~ US_aid_total, data = aid2007)
 summary(mod)
 confint(mod)
 ```
 
+
+```{r}
+mod1 <- lm(GDP_total_growth_rate~ US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3),data = aid2007)
+summary(mod1)
+confint(mod1)
+```
+
+According to our model, the coefficient of U.S aid is 5.963e-04, suggesting that U.S aid can generate positive economic impact on the recipients; however, the impact is relatively small and not significant in 2007. Also, we can see that the coefficients of U.S aid is not statistically significant after we incorporate all the controlled variables in our model. Therefore, we might suggest that there are indirect paths connecting the foreign aid and the GDP growth rate of recipient countries; and we might conclude that U.S aid can contribute to the GDP growth rate of recipients countries indirectly, but we still can not verify the vadility of the direct path or the direct impact of U.S aid and the GDP growth rate of recipient countries.
+
+
+### Evaluation of regression model
+```{r}
+results <- data.frame(resid = resid(mod1), fitted = fitted(mod1))
+        ggplot(results, aes(x = fitted, y = resid)) + 
+          geom_point() + 
+          geom_hline(yintercept = 0)
+```
+
+In the residual plot, we can see that the residuals are assigned relatively evenly across the x-axis; also, the spread is also relatively random. Therefore, our model might provide a fair and accurate analysis. 
 
 
 # Sensivity Analysis
@@ -225,14 +288,90 @@ confint(mod)
 
 
 ## Different Year (2012)
+1. Population growth rate vs. U.S aid
 
+```{r}
+p1<- ggplot(data = aid2012, aes(x = population_growth_rate, y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,2), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+
+2. Trade balance of recipient countries vs. U.S aid
+
+```{r}
+p2<- ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,1), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+3. Politics score vs. U.S aid
+
+```{r}
+p3<- ggplot(data = aid2012, aes(x = polity2, y = log(US_aid_total))) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,3), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+```{r}
+library("gridExtra")
+grid.arrange(p1,p2,p3)
+```
+
+
+
+```{r}
+mod2 <- lm(GDP_total_growth_rate~ US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,2),data = aid2007)
+summary(mod2)
+confint(mod2)
+```
+```{r}
+mod3 <- lm(GDP_total_growth_rate~ US_aid_total ,data = aid2012)
+summary(mod3)
+confint(mod3)
+```
+
+
+Evaluation of regression model
+```{r}
+results <- data.frame(resid = resid(mod2), fitted = fitted(mod2))
+        ggplot(results, aes(x = fitted, y = resid)) + 
+          geom_point() + 
+          geom_hline(yintercept = 0)
+```
+
+The regression using data from 2010 gave us the same results: U.S aid can generate insignificant positive economic impact on the recipients. The coefficient of U.S aid is not significant in the model that included all controls; therefore, we can still suggest there are indirect paths from U.S aid to the GDP growth rate, but we can not conclude that there is direct impact on the economics of the recipient countries.
 
 ## Another Measurement of Economic growth
 
+```{r}
+mod4 <- lm(GDP_per_growth_rate ~ US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3),data = aid2007)
+summary(mod4)
+confint(mod4)
+```
+
+We also switch to another common estimator of economic growth: GDP per capita growth rate. The coefficient of U.S aid is still not significant and the magnitude remains small; therefore, our results are consistent with the previous regression model. 
 
 
 # Limitations 
 
+## Limited Time line
+In our model, we only used data in a particular year, which might not be persuasive or representative enough for us to make strong conclusion on the impact of U.S aid. For the future study, we might want to consider using a panel dataset and a time series model, such as the mixed effect model; then we might be able to generalize our conclusion on the impact of U.S aid. 
+
+## Other important variables
+We also know that there are various type of foreign aid, ODA and OOF. Also, within ODA and OOF, there are various type of aids as well. Some are goverment grants, and others might be loans. Since there are different forms of foreign aids and their characteristics might generate different impact on the economics of the recipient countries. Therefore, we might also want to examine the impact of various types of foreign aids, which can lead us to an alternative answer.
+
+## Causal Discovery and Regression
+We used causal discovery to explore various forms of causal paths and graphs; however, we did not build our regression based on different conditional sets generated through causal discovery. Therefore, for future study, we can have different sets of conditional variables according to causal discovery and build regression models for each of those. 
 
 
 # Reference
