@@ -5,8 +5,8 @@ date: "10/8/2020"
 output: html_document
 ---
 # Data Preprocessing
+
 ```{r,message=FALSE}
-# Loading
 library(dplyr)
 library(naniar)
 library(pcalg)
@@ -14,6 +14,7 @@ library(ggplot2)
 library(dagitty)
 library("splines")
 ```
+
 + `country`: recipient country
 + `year`: year
 + `US_ODA`: U.S. Official development assistance(treatment), defined as government aid designed to promote the economic development and welfare of developing countries[1]. 
@@ -30,13 +31,13 @@ library("splines")
 + `GDP_total_growth_rate`: Recipient's total GDP growth rate, calculated by (this year - previous year)/previous year.
 + `population_growth_rate`: Recipient's Population growth rate, calculated by (this year - previous year)/previous year.
 
-
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
 aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
 head(aid)
 ```
 First, let's visualize the distribution of the missing data.
+
 ```{r}
 vis_miss(aid)
 vis_miss(aid,cluster = TRUE)
@@ -136,14 +137,13 @@ plot(pc_aid, main = "")
 
 Comparing the resulted causal graph with our assumptions, we spot the following causal flow that we didn't identify before:
 
->
+
 1. it's mainly ODA, instead of OOF, that contributes to other variables. For example, the graph shows that US_ODA has a direct effect on popolucation growth rate, which stimulates GDP growth. Rest_of_Work_ODA also contributes to population, which directly affects recipient's world trade. 
 2. US_ODA has a direct effect on Rest_of_Work_ODA.
 3. oda_gni directly affects recipient_trade_world.
 
 As we relax the treshold from 0.01 to 0.12, there are a few changes we think might be of interests:
 
->
 1. when threshold is 0.01, recipient_trade_world contributes to population. When threshold increases, it's polulation contributes to recipient_trade_world. Therefore, both directions worth exploring in our later sensitivity analysis.
 2. when threshold increases to 0.12, polity2 is considered to contribute to population growth. 
 
@@ -161,20 +161,18 @@ How GDP_total_growth_rate is affected by US_ODA and Rest_of_world_ODA?
 ggplot(data = aid2012, aes(x = US_ODA, y = GDP_total_growth_rate)) +
     geom_point(aes(color = Rest_of_world_ODA), size = 2) +
     geom_smooth(se = FALSE, color = "blue")+
-    geom_smooth(formula = y~ns(x,3), method = "lm",
-        se = FALSE, color = "red"
-    )+
   coord_cartesian(xlim = c(0,1000))+
   scale_color_gradient(low = "yellow", high = "darkblue")
 ```
 
 From the plot, we can tell `U.S. ODA` and `rest of world ODA` are correlated, which verifies the causal graph above.
-We vaguely get a sense that both world ODA and U.S. ODA positively contribute to GDP total growth rate. Also, we would want to cut U.S ODA into three categories: 0~250, 251~500, 500+ because we can see that there seem to be an increasing trend between 0-250, and another decreasing trend between 250 and 500. 
+We vaguely get a sense that both world ODA and U.S. ODA positively contribute to GDP total growth rate. Also, we would want to cut U.S ODA into two categories: [0,250] and [251,+) because we can see that there seem to be an increasing trend between 0-250, and another decreasing trend for US_ODA that's larger than 250. 
 
 ```{r}
 aid2012 <- aid2012%>%
   mutate(US_ODA_C = ifelse(US_ODA<250, 0,1))
- 
+aid2012$US_ODA_C = as.factor(aid2012$US_ODA_C)
+
 ```
 
 
@@ -253,14 +251,14 @@ In this graph, we can see that association between U.S ODA and politics score is
 ### Regression Results and Interpretation
 
 ```{r}
-mod<-lm(GDP_total_growth_rate~ as.factor(US_ODA_C), data = aid2012)
+mod<-lm(GDP_total_growth_rate~ US_ODA_C, data = aid2012)
 summary(mod)
 confint(mod)
 ```
 
 
 ```{r}
-mod1 <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,2),data = aid2012)
+mod1 <- lm(GDP_total_growth_rate~ US_ODA_C +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,2),data = aid2012)
 summary(mod1)
 confint(mod1)
 ```
@@ -276,7 +274,7 @@ results <- data.frame(resid = resid(mod1), fitted = fitted(mod1))
           geom_point() + 
           geom_hline(yintercept = 0)
 ```
-d
+
 In the residual plot, we can see that the residuals are assigned relatively evenly across the x-axis; also, the spread is also relatively random. Therefore, we can be confident that there is no heteroskedasticity in our model. 
 
 
@@ -380,7 +378,7 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
     # the sensitivity analysis in a new context.
 
     # Refit model to estimate the causal effect 
-    updated_model <- lm(GDP_total_growth_rate ~US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3)+U, data = .data)
+    updated_model <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,2)+U, data = .data)
     # The names of the coefficients and confidence interval output rows
     # are called "A" for the treatment variable A.
     # This will change in a new dataset.
@@ -396,15 +394,15 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
 # Begin the sensitivity analysis
 
 # Fit required models for the sensitivity analysis
-mod_A <- lm(US_ODA ~ ns(polity2,3)+recipient_trade_world, data = aid2007)
-mod_Y <- lm(GDP_total_growth_rate ~US_ODA +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3), data = aid2007)
+mod_A <- lm(as.factor(US_ODA_C) ~ ns(polity2,3)+recipient_trade_world, data = aid2007)
+mod_Y <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,2), data = aid2007)
 
 # Set up degree of association between U and A and between U and Y
 # The U->A associations have some constraints: we set up values 
 # for the U->A associations that are at most equal to the
 # standard deviation of the residuals from the model for A.
-U_A_assocs <- seq(from = 1, to = sigma(mod_A)/10, length.out = 10)
-U_Y_assocs <- seq(from = -5, to = -1, by = 1)
+U_A_assocs <- seq(from = 1, to = sigma(mod_A)/20, length.out = 10)
+U_Y_assocs <- seq(from = -sigma(mod_Y), to = -0.01, by = 1)
 
 # Form all combinations of the U->A and U->Y sensitivity parameters
 sens_data <- expand.grid(U_A = U_A_assocs, U_Y = U_Y_assocs)
