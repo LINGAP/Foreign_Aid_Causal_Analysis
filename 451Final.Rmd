@@ -1,5 +1,5 @@
 ---
-title: "451Project"
+title: "Causal analysis: How does U.S. foreign aid affect recipient's GDP growth"
 author: "Ling Ma, Debbie Sun"
 date: "10/8/2020"
 output: html_document
@@ -14,6 +14,9 @@ library(ggplot2)
 library(dagitty)
 library("splines")
 ```
+
+First, let's have a look at the data set.
+
 + `country`: recipient country
 + `year`: year
 + `US_ODA`: U.S. Official development assistance(treatment), defined as government aid designed to promote the economic development and welfare of developing countries[1]. 
@@ -36,7 +39,9 @@ aid = read.csv("processed.csv")
 aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
 head(aid)
 ```
-First, let's visualize the distribution of the missing data.
+
+Now, let's visualize the distribution of the missing data.
+
 ```{r}
 vis_miss(aid)
 vis_miss(aid,cluster = TRUE)
@@ -107,7 +112,13 @@ The causal graph is constructed based on our prior assumptions and common sense:
 
 The causal graph was constructed based on our prior knowledge, which entails that the relationship assumed could be inaccurate. Therefore, we adopt causal discovery algorithm to generate causal graphs which help us identify causal flows.
 
-The core idea of the algorithm is that if conditional on all possible sets of other variables, there remains a significant relationship between variable A and B, then there exists a direct causal association between them. The direction of the arrow is determined by controlling 
+The core idea of the algorithm is that if conditional on all possible sets of other variables, there remains a significant relationship between variable A and B, then there exists a direct causal association between them. The direction of the arrow is determined by controlling the middle variable for every three connected  variables.
+
+alpha is the threshold for the signifiance level. If
+- alpha = 0: holding an extremely high bar for an estimate of ACE to be counted
+as significant. No edge will be present in the resulted graph.
+- alpha = 1: any relationship between nodes is considered to be valid and real.
+The resulted graph skeleton will be strongly connected.
 
 ### alpha = 0.01
 
@@ -136,14 +147,13 @@ plot(pc_aid, main = "")
 
 Comparing the resulted causal graph with our assumptions, we spot the following causal flow that we didn't identify before:
 
->
+
 1. it's mainly ODA, instead of OOF, that contributes to other variables. For example, the graph shows that US_ODA has a direct effect on popolucation growth rate, which stimulates GDP growth. Rest_of_Work_ODA also contributes to population, which directly affects recipient's world trade. 
 2. US_ODA has a direct effect on Rest_of_Work_ODA.
 3. oda_gni directly affects recipient_trade_world.
 
 As we relax the treshold from 0.01 to 0.12, there are a few changes we think might be of interests:
 
->
 1. when threshold is 0.01, recipient_trade_world contributes to population. When threshold increases, it's polulation contributes to recipient_trade_world. Therefore, both directions worth exploring in our later sensitivity analysis.
 2. when threshold increases to 0.12, polity2 is considered to contribute to population growth. 
 
@@ -153,7 +163,7 @@ It appears that the way variables affect the outcome is via population growth.
 
 ### Informed by causal discovery graph
 
-Informed by rthe causal discovery algorithm, we also explore the relationship between US_ODA and other variables. In the below section, we visualize the relationships that are suggested by the causal discovery algorithm.
+Informed by rtheg causal discovery algorithm, we also explore the relationship between US_ODA and other variables. In the below section, we visualize the relationships that are suggested by the causal discovery algorithm.
 
 #####  US_ODA as treatment to replace US_aid_total 
 
@@ -163,9 +173,6 @@ How GDP_total_growth_rate is affected by US_ODA and Rest_of_world_ODA?
 ggplot(data = causalAid, aes(x = US_ODA, y = GDP_total_growth_rate)) +
     geom_point(aes(color = Rest_of_world_ODA), size = 2) +
     geom_smooth(se = FALSE, color = "blue")+
-    geom_smooth(formula = y~ns(x,3), method = "lm",
-        se = FALSE, color = "red"
-    )+
   coord_cartesian(xlim = c(0,1000))+
   scale_color_gradient(low = "yellow", high = "darkblue")
 ```
@@ -174,6 +181,8 @@ From the plot, we can tell `U.S. ODA` and `rest of world ODA` are correlated, wh
 We vaguely get a sense that both world ODA and U.S. ODA positively contribute to GDP total growth rate.
 
 ##### Does Rest_of_world_ODA_total affect the outcome?
+
+Earlier, we didn't see a causal flow from `rest of world aid` to the outcome, which is implausible from common sense. However, this graph suggests we are still justified to believe `rest of world aid` might open another causal graph.
 
 ```{r}
 ggplot(data = causalAid, aes(x = Rest_of_world_aid_total, y = GDP_total_growth_rate)) +
@@ -184,23 +193,9 @@ ggplot(data = causalAid, aes(x = Rest_of_world_aid_total, y = GDP_total_growth_r
     )
 ```
 
-Earlier, we didn't see a causal flow from `rest of world aid` to the outcome, which is implausible from common sense. However, this graph suggests we are still justified to believe `rest of world aid` might open another causal graph .
-
-##### Does polity2 interact with US_ODA?
-
-```{r}
-ggplot(data = causalAid, aes(x = US_ODA, y =polity2 )) +
-    geom_point(aes(color = GDP_total_growth_rate), size = 2) +
-  scale_color_gradient(low = "yellow", high = "darkblue")+
-    geom_smooth(se = FALSE, color = "blue")+
-  coord_cartesian(xlim = c(0,1000))
-```
-
-The colored scatter points don't seem to form a clear pattern. Therefore we don't assume an interaction between polity2 and US_ODA.
-
 ## Model Construction
 
-Before we construct the regression model, we would first want to visualize the association between U.S aid and other controlled variables in our model. The goal of visualization is to find out if the association is linear or not and if we should introduce the nonlinearity into our model.
+Before we construct the regression model, we would also want to visualize the association between U.S aid and other controlled variables in our model. The goal of visualization is to find out if the association is linear or not and if we should introduce the nonlinearity into our model.
 
 ### GDP growth rate vs. US foreign aid (Treatment vs. Outcome)
 
@@ -253,8 +248,21 @@ ggplot(data = aid2007, aes(x = polity2, y = log(US_ODA))) +
     se = FALSE, color = "red" )
 ```
 
-In this graph, we can see that association between U.S ODA and politics score is non-linear; therefore, this variable should also be non-linear in our model
+In this graph, we see that association between U.S ODA and politics score is non-linear; therefore, this variable should also be non-linear in our model
 
+##### 4. Does polity2 interact with US_ODA?
+
+When alpha is relaxed to 0.12, both polity2 and US_ODA appear to affect the growth outcome directly. Therefore, we wonder if the countries would have different growth given different polity2 even they receive the same amount of US_ODA.
+
+```{r}
+ggplot(data = causalAid, aes(x = US_ODA, y =polity2 )) +
+    geom_point(aes(color = GDP_total_growth_rate), size = 2) +
+  scale_color_gradient(low = "yellow", high = "darkblue")+
+    geom_smooth(se = FALSE, color = "blue")+
+  coord_cartesian(xlim = c(0,1000))
+```
+
+The colored scatter points don't seem to form a clear pattern. Therefore we don't assume an interaction between polity2 and US_ODA.
 
 ## Regression Model
 
@@ -264,7 +272,12 @@ In this graph, we can see that association between U.S ODA and politics score is
 mod<-lm(GDP_total_growth_rate~ US_ODA, data = aid2007)
 summary(mod)
 confint(mod)
+```
 
+```{r}
+mod1 <- lm(GDP_total_growth_rate~ ns(US_ODA,3),data = aid2007)
+summary(mod1)
+confint(mod1)
 ```
 
 
@@ -285,7 +298,7 @@ results <- data.frame(resid = resid(mod1), fitted = fitted(mod1))
           geom_point() + 
           geom_hline(yintercept = 0)
 ```
-d
+
 In the residual plot, we can see that the residuals are assigned relatively evenly across the x-axis; also, the spread is also relatively random. Therefore, our model might provide a fair and accurate analysis. 
 
 
@@ -347,7 +360,7 @@ The coefficient of the U.S aid is positive but not significant, which is consist
 
 ## Unmeasured Variable
 
-```{r}
+```{r eval=FALSE}
 sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
     n <- nrow(.data)
 
@@ -376,7 +389,7 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
     # the sensitivity analysis in a new context.
 
     # Refit model to estimate the causal effect 
-    updated_model <- lm(GDP_total_growth_rate ~US_aid_total +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3)+U, data = .data)
+    updated_model <- lm(GDP_total_growth_rate ~US_ODA +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3)+U, data = .data)
     # The names of the coefficients and confidence interval output rows
     # are called "A" for the treatment variable A.
     # This will change in a new dataset.
@@ -393,14 +406,14 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
 
 # Fit required models for the sensitivity analysis
 mod_A <- lm(US_ODA ~ ns(polity2,3)+recipient_trade_world, data = aid2007)
-mod_Y <- lm(GDP_total_growth_rate ~US_ODA +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3), data = aid2007)
+mod_Y <- lm(GDP_total_growth_rate~US_ODA +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,3), data = aid2007)
 
 # Set up degree of association between U and A and between U and Y
 # The U->A associations have some constraints: we set up values 
 # for the U->A associations that are at most equal to the
 # standard deviation of the residuals from the model for A.
-U_A_assocs <- seq(from = 1, to = sigma(mod_A)/10, length.out = 10)
-U_Y_assocs <- seq(from = -5, to = -1, by = 1)
+U_A_assocs <- seq(from = 0.01, to = sigma(mod_A)/10, length.out = 10)
+U_Y_assocs <- seq(from = -sigma(mod_Y), to = -0.01, by = 0.5)
 
 # Form all combinations of the U->A and U->Y sensitivity parameters
 sens_data <- expand.grid(U_A = U_A_assocs, U_Y = U_Y_assocs)
@@ -424,6 +437,8 @@ ggplot(sens_data, aes(x = U_A, y = estimate)) +
     facet_wrap(~U_Y, labeller = as_labeller(prepender)) +
     labs(x = "Strength of U -> A association", y = "ACE and 95% CI")
 ```
+
+
 
 ## Different Year (2012)
 
@@ -490,13 +505,13 @@ We also switch to another common estimator of economic growth: GDP per capita gr
 
 # Limitations 
 
-## Limited Time line
+#### Limited Time line
 In our model, we only used data in a particular year, which might not be persuasive or representative enough for us to make strong conclusion on the impact of U.S aid. For the future study, we might want to consider using a panel dataset and a time series model, such as the mixed effect model; then we might be able to generalize our conclusion on the impact of U.S aid. 
 
-## Other important variables
+#### Other important variables
 We also know that there are various type of foreign aid, ODA and OOF. Also, within ODA and OOF, there are various type of aids as well. Some are goverment grants, and others might be loans. Since there are different forms of foreign aids and their characteristics might generate different impact on the economics of the recipient countries. Therefore, we might also want to examine the impact of various types of foreign aids, which can lead us to an alternative answer.
 
-## Causal Discovery and Regression
+#### Causal Discovery and Regression
 We used causal discovery to explore various forms of causal paths and graphs; however, we did not build our regression based on different conditional sets generated through causal discovery. Therefore, for future study, we can have different sets of conditional variables according to causal discovery and build regression models for each of those. 
 
 
