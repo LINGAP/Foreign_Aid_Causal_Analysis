@@ -224,6 +224,43 @@ The colored scatter points don't seem to form a clear pattern. Therefore we DON'
 
 ### Regression Results and Interpretation
 
+##### 1. Population growth rate vs. GDP growth rate
+```{r}
+ggplot(data = aid2012, aes(x = population_growth_rate, y = GDP_total_growth_rate )) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,3), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+According to the graph above, we might incorporate population growth rate as an non-linear variable in our model. 
+
+##### 2. Trade balance of recipient countries vs. GDP growth rate
+
+```{r}
+ggplot(data = aid2012, aes(x =log(recipient_trade_world), y = GDP_total_growth_rate )) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,2), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+Since the trade balance of recipient countries is relative big number compared to the foreign aid, we want to use the natural log of the trade balance so that we are able to see numbers on the same scale; also, our analysis would not misled by the big numbers. In this graph, we can see that the natural log of trade balance of recipient countries is non-linear. 
+
+##### 3. Politics score vs. GDP growth rate
+
+```{r}
+ggplot(data = aid2012, aes(x = polity2, y = GDP_total_growth_rate )) +
+  geom_point() +
+  geom_smooth(se = FALSE, color = "blue")+ 
+  geom_smooth(formula = y~ns(x,3), method = "lm",
+    method.args = list(family="binomial"),
+    se = FALSE, color = "red" )
+```
+
+
 ```{r}
 mod<-lm(GDP_total_growth_rate~ as.factor(US_ODA_C), data = aid2012)
 summary(mod)
@@ -232,12 +269,14 @@ confint(mod)
 
 
 ```{r}
-mod1 <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +recipient_trade_world+polity2+population_growth_rate,data = aid2012)
+mod1 <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(log(recipient_trade_world),2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
 summary(mod1)
 confint(mod1)
 ```
 
-According to our model, if the U.S ODA is smaller than 250, then it is expected to contribute to 2.591 percent GDP growth for the recipient countries in 2012 when we hold other variables as constant; however, if the U.S ODA is greater than 250, then the expected GDP growth rate would only increase by 1.438 percent in 2012 holding other variables constant. Yet, the benefits of U.S ODA is insignificant no matter it is greater or less than 250 in 2012.
+
+
+According to our model, if the U.S ODA is smaller than 250, then it is expected to contribute to 0.3742 percent GDP growth for the recipient countries in 2012 when we hold other variables as constant; however, if the U.S ODA is greater than 250, then the expected GDP growth rate would decrease by 1.08 percent in 2012 holding other variables constant. Yet, the benefits of U.S ODA is insignificant no matter it is greater or less than 250 in 2012.
 
 
 ### Evaluation of regression model
@@ -249,7 +288,24 @@ results <- data.frame(resid = resid(mod1), fitted = fitted(mod1))
           geom_hline(yintercept = 0)
 ```
 
-In the residual plot, we can see that the residuals are assigned relatively evenly across the x-axis; also, the spread is also relatively random. Therefore, we can be confident that there is no heteroskedasticity in our model. 
+In the residual plot, we can see that the residuals are assigned relatively evenly across the x-axis; also, the spread is also relatively random. Therefore, we can be confident that there is no heteroskedasticity in our model.
+
+Besides the non-linear model, we also want to investigate the results from the linear model; and we would want to compare the residual plot and the adjusted R squared to see which model we would choose.
+
+```{r}
+linear <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C)+ recipient_trade_world+polity2+population_growth_rate,  data = aid2012)
+summary(linear)
+```
+
+```{r}
+results <- data.frame(resid = resid(linear), fitted = fitted(linear))
+        ggplot(results, aes(x = fitted, y = resid)) + 
+          geom_point() + 
+          geom_hline(yintercept = 0)
+```
+
+We can see that the residual plots of the non-linear model is slightly better than that of the linear model because the residuals spread out more randomly. Also, the adjusted R squared is 0.2315 for the non-linear model which is higher than that of the linear model. Since the performance of the non-linear model is better, we would choose the non-linear model for our analysis and sensitivity analysis as well.  
+
 
 
 # Sensivity Analysis
@@ -270,38 +326,38 @@ aid2012 <- aid2012%>%
 ```
 
 
-##### 1. Population growth rate vs. U.S aid
+##### 1. Population growth rate vs. GDP growth rate
 ```{r}
-p1 <- ggplot(data = aid2012, aes(x = population_growth_rate, y = US_aid_total_C )) +
+p1 <- ggplot(data = aid2012, aes(x = population_growth_rate, y = GDP_total_growth_rate )) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,3), method = "glm",
+  geom_smooth(formula = y~ns(x,3), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
 
 According to the graph above, we might incorporate population growth rate as an non-linear variable in our model. 
 
-##### 2. Trade balance of recipient countries vs. U.S aid
+##### 2. Trade balance of recipient countries vs. GDP growth rate
 
 ```{r}
-p2 <- ggplot(data = aid2012, aes(x =recipient_trade_world, y = US_aid_total_C )) +
+p2 <- ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = GDP_total_growth_rate )) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,1), method = "glm",
+  geom_smooth(formula = y~ns(x,1), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
 
 Since the trade balance of recipient countries is relative big number compared to the foreign aid, we want to use the natural log of the trade balance so that we are able to see numbers on the same scale; also, our analysis would not misled by the big numbers. In this graph, we can see that the natural log of trade balance of recipient countries is non-linear. 
 
-##### 3. Politics score vs. U.S aid
+##### 3. Politics score vs. GDP growth rate
 
 ```{r}
-p3 <- ggplot(data = aid2012, aes(x = polity2, y = US_aid_total_C )) +
+p3 <- ggplot(data = aid2012, aes(x = polity2, y = GDP_total_growth_rate )) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,3), method = "glm",
+  geom_smooth(formula = y~ns(x,3), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
@@ -312,12 +368,12 @@ grid.arrange(p1,p2,p3)
 ```
 
 ```{r}
-mod2 <- lm(GDP_total_growth_rate~ as.factor(US_aid_total_C) +recipient_trade_world+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
+mod2 <- lm(GDP_total_growth_rate~ as.factor(US_aid_total_C) +log(recipient_trade_world)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
 summary(mod2)
 confint(mod2)
 ```
 
-As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250, the GDP growth rate would be expected to increaseby 4.7772 percent holding all else constant in 2007; however, if the aid is greater than 250, the GDP growth rate would be expected to increase by 4.1737 percent holding all else constant in 2007. Yet, both benefits are insignificant. The results are consistent with our findings that use U.S ODA as the treatment. 
+As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250, the GDP growth rate would be expected to decrease by 0.5115 percent holding all else constant in 2007. Yet, both benefits are insignificant. The results are consistent with our findings that use U.S ODA as the treatment. 
 
 ##### 4. Unmeasured Variable
 
@@ -474,43 +530,44 @@ ggplot(data = aid2007, aes(x = US_ODA, y = GDP_total_growth_rate))+
 ```
 
 
-According to the graph, we might need to cut US_ODA at around 100 because there is an increasing trend before 100. 
+According to the graph, we might need to cut US_ODA at around 100 because there is an increasing trend before 100.
+
 ```{r}
 aid2007 <- aid2007%>%
   mutate(US_ODA_C = ifelse(US_ODA<100, 0,1))
  
 ```
 
-###### 1. Population growth rate vs. U.S aid
+###### 1. Population growth rate vs. GDP growth rate
 
 ```{r}
-p4<- ggplot(data = aid2007, aes(x = population_growth_rate, y = US_ODA_C)) +
+p4<- ggplot(data = aid2007, aes(x = population_growth_rate, y = GDP_total_growth_rate)) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,3), method = "glm",
+  geom_smooth(formula = y~ns(x,3), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
 
 
-###### 2. Trade balance of recipient countries vs. U.S aid
+###### 2. Trade balance of recipient countries vs. GDP growth rate
 
 ```{r}
-p5<- ggplot(data = aid2012, aes(x = recipient_trade_world, y = US_ODA_C)) +
+p5<- ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = GDP_total_growth_rate)) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,2), method = "glm",
+  geom_smooth(formula = y~ns(x,2), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
 
-###### 3. Politics score vs. U.S aid
+###### 3. Politics score vs. GDP growth rate
 
 ```{r}
-p6<- ggplot(data = aid2012, aes(x = polity2, y = US_ODA_C)) +
+p6<- ggplot(data = aid2012, aes(x = polity2, y = GDP_total_growth_rate)) +
   geom_point() +
   geom_smooth(se = FALSE, color = "blue")+ 
-  geom_smooth(formula = y~ns(x,3), method = "glm",
+  geom_smooth(formula = y~ns(x,3), method = "lm",
     method.args = list(family="binomial"),
     se = FALSE, color = "red" )
 ```
@@ -523,12 +580,12 @@ grid.arrange(p4,p5,p6)
 
 
 ```{r}
-mod3 <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2007)
+mod3 <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C) +ns(log(recipient_trade_world),2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2007)
 summary(mod3)
 confint(mod3)
 ```
 
-When we use the data from 2007, we can see that if the U.S ODA is smaller than 100, the GDP growth rate is expected to increase by 12.3425 percent while we holding other variables as constant; while if the U.S ODA is greater than 100, the GDP growth rate of recipients would be expected to increase by 13.6954 percent holding other variable constant. However, the benefits of U.S ODA (<100) is significant, which is different from our previous results using data from 2012. Also, the additional benefit of larger U.S ODA is also not significant; therefore, we can conclude that the more the U.S ODA, the greater economic impact it can generate. 
+When we use the data from 2007, we can see that if the U.S ODA is smaller than 100, the GDP growth rate is expected to increase by 8.49439 percent while we holding other variables as constant; while if the U.S ODA is greater than 100, the GDP growth rate of recipients would be expected to increase by  9.54182 percent holding other variable constant. However, the benefits of U.S ODA (<100) is significant, which is different from our previous results using data from 2012. Also, the additional benefit of larger U.S ODA is also not significant; therefore, we can not conclude that the more the U.S ODA, the greater economic impact it can generate. 
 
 It also makes sense that our results differ across different years because the marginal benefit of additional foreign aid is very likely to be different. Since the marginal benefit can differ, then the estimated contribution to the economics should also be different for each year. 
 
@@ -536,13 +593,12 @@ It also makes sense that our results differ across different years because the m
 ##### Another Measurement of Economic growth
 
 ```{r}
-mod4 <- lm(GDP_per_growth_rate ~ as.factor(US_ODA_C) +ns(recipient_trade_world,2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
+mod4 <- lm(GDP_per_growth_rate ~ as.factor(US_ODA_C) +ns(log(recipient_trade_world),2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
 summary(mod4)
 confint(mod4)
 ```
 
-We also switch to another common estimator of economic growth: GDP per capita growth rate. The coefficient of U.S ODA is still not significant and the magnitude remains small; therefore, our results are consistent with the previous regression model using GDP growth rate in 2012. 
-
+We also switch to another common estimator of economic growth: GDP per capita growth rate. The coefficient of U.S ODA is still not significant and the magnitude remains small; but the only difference is that when U.S ODA is over 250, there is insignificant benefit compared to a U.S ODA smaller than 250. Our results are consistent with the previous findings using GDP growth rate.
 
 # Limitations 
 
