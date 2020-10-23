@@ -278,7 +278,7 @@ confint(mod1)
 Benefits of Countries which received U.S ODA < 250 million dollars: 0.3742 percent ;
 Benefits of Countries which received U.S ODA > 250 million dollars: 0.3742 -1.4542 = -1.08 percent   
 
-According to our model, if the U.S ODA is smaller than 250 million dollars, then it is expected to contribute to 0.3742 percent GDP growth for the recipient countries in 2012 when we hold other variables as constant; however, if the U.S ODA is greater than 250 million dollars, then the expected GDP growth rate would decrease by 1.08 percent in 2012 holding other variables constant. Yet, the benefits of U.S ODA is insignificant no matter it is greater or less than 250 million dollars in 2012. Even though the benefits of U.S ODA is insignificant in 2012 after we controlled for other variables, we still don't have enough evidence for a causal effect of the U.S ODA because we are not sure if the true causal effect is actually zero. 
+According to our model, if the U.S ODA is larger than 250 million dollars, then the causal effect of that donation is -1.4542 percent less GDP growth for the recipient countries than if the recipient were going to receive less donation in 2012, when we hold other variables as constant. Yet, the effect of U.S ODA is insignificant becuse the p-value for -1.4542 is 0.13322, which is way higher than conventional p-value thresholds 0.01 or 0.05. It means we are unable to reject the null hypothesis that large donation and small donation don't make a difference in GDP growth of the recipient country. 
 
 
 ##### Evaluation of regression model
@@ -297,7 +297,7 @@ Besides the non-linear model, we also want to investigate the results from the l
 ##### linear regression model
 
 ```{r}
-linear <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C)+ recipient_trade_world+polity2+population_growth_rate,  data = aid2012)
+linear <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C)+ log(recipient_trade_world)+polity2+log(population_growth_rate),  data = aid2012)
 summary(linear)
 ```
 
@@ -317,6 +317,7 @@ We can see that the residual plots of the non-linear model is slightly better th
 # Sensivity Analysis
 
 #### Another Treatment variable
+
 Despite the fact that only U.S ODA can directly connect with the outcome according to our causal discovery, it does not necessarily suggest that other variables can not affect the outcome. Therefore, we want to investigate another potential treatment: total amount of U.S aid; and we want to see its impact on the outcome. 
 
 ```{r}
@@ -377,7 +378,7 @@ summary(mod2)
 confint(mod2)
 ```
 
-As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250 million dollars, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250 million dollars, the GDP growth rate would be expected to decrease by 0.5115 percent holding all else constant in 2007. Yet, both benefits are insignificant. The results are consistent with our findings that use U.S ODA as the treatment. 
+As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250 million dollars, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250 million dollars, the GDP growth rate would be -1.0671 percentage less than receiving small donations, which means large donation is less ideal as receiving small donation in regard to GDP growth. Yet, the effect is insignificant(p-value is 0.2312), so we cannot reject the null effect hypothesis. The results are consistent with our findings that use U.S ODA as the treatment. 
 
 #### 4. Unmeasured Variable
 
@@ -471,7 +472,8 @@ sensitivity_analysis <- function(.data, model_A, model_Y, assoc_A, assoc_Y) {
 
 # Fit required models for the sensitivity analysis
 mod_A <- lm(US_ODA_C ~ ns(polity2,3)+ns(log(recipient_trade_world),2)+ns(log(population),2), data = aid2012)
-mod_Y <- lm(GDP_total_growth_rate~ US_ODA_C +log(recipient_trade_world)+polity2+log(population_growth_rate), data = aid2012)
+mod_Y <- lm(GDP_total_growth_rate~ US_ODA_C +ns(log(recipient_trade_world),2)+ns(polity2,3)+ns(population_growth_rate,3), data = aid2012)
+
 
 
 summary(mod_A)
@@ -519,9 +521,9 @@ The black line denotes the ACE(US_ODA that's larger than 250) under the specifie
 
 *This is counterintuitive, because usually we would assume more donation results in more obvious economic growth in the recipient's country. A potential explanation we come up with is that poorer pre-aid condition of the recipient results in more donation, but the donation might not be used effectively due to the poor pre-aid condition. For example, according to prior knowledge, the contries receiving the most aid are Iraq, Jordan, Syria, where the political situation is not very stable. We think this might account for the counterintuitive "more donation --> less ideal" effect.*
 
-2. Then what effect could U have? Within each U –> Y assumptioin, the various effect magnitude U –> A doesn't seem to change the generally less ideal effect of large donation comparing to small donation.
+2. Then what effect could U have? Within each U –> Y assumptioin, the various effect magnitude U –> A seems to result in more obvious negative effect when receiving large donation versus smaller donation. 
 
-3. Within each U –> A, in general, the stronger the hypothetical effect of U –> Y, the less negative effect the large donation has on the GDP growth, but the trend is not obvious and not very consistent along with the increment maginitude of U –>A.
+3. Within each U –> A, in general, the stronger the hypothetical effect of U –> Y, the less negative effect the large donation has on the GDP growth, but the trend is not obvious with small maginitude of U –>A. The confidence interval becomes entirely below 0 for strong U-->A, which means if the unmeasured variable affects the treatment a lot, then we are more confident in our evidence that larger donation results in less ideal GDP growth.
 
 Therefore, our estimated ACE is quite robust even after considering a various causal flow that passes U, but insignificant.
 
