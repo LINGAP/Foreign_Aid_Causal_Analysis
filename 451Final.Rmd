@@ -275,9 +275,6 @@ summary(mod1)
 confint(mod1)
 ```
 
-Benefits of Countries which received U.S ODA < 250 million dollars: 0.3742 percent ;
-Benefits of Countries which received U.S ODA > 250 million dollars: 0.3742 -1.4542 = -1.08 percent   
-
 According to our model, if the U.S ODA is larger than 250 million dollars, then the causal effect of that donation is -1.4542 percent less GDP growth for the recipient countries than if the recipient were going to receive less donation in 2012, when we hold other variables as constant. Yet, the effect of U.S ODA is insignificant becuse the p-value for -1.4542 is 0.13322, which is way higher than conventional p-value thresholds 0.01 or 0.05. It means we are unable to reject the null hypothesis that large donation and small donation don't make a difference in GDP growth of the recipient country. 
 
 
@@ -380,7 +377,7 @@ confint(mod2)
 
 As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250 million dollars, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250 million dollars, the GDP growth rate would be -1.0671 percentage less than receiving small donations, which means large donation is less ideal as receiving small donation in regard to GDP growth. Yet, the effect is insignificant(p-value is 0.2312), so we cannot reject the null effect hypothesis. The results are consistent with our findings that use U.S ODA as the treatment. 
 
-#### 4. Unmeasured Variable
+#### Unmeasured Variable
 
 A common robust test is to see how an unmeasured confounder could affect the result. We recognize that the effect of foreign aid on recipient's economic growth can go through complicated paths, in addition to the ones we showed above. However, due to the lack of data and the complexity of the topic, our causal graph couldn't capture all the plausible causal relationships. Therefore, we particular need to assume the existence of an unmeasured confounder and see how it would affect our prior result.
 
@@ -392,7 +389,7 @@ Since the absolute value of trade balance of recipient countries is a relative b
 
 Similarly, putting population on log scale helps fitting the model.
 
-4.1. US_ODA_C~log(recipient_trade_world)
+##### US_ODA_C~log(recipient_trade_world)
 
 ```{r}
 ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = US_ODA_C)) +
@@ -403,7 +400,7 @@ ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = US_ODA_C)) +
     se = FALSE, color = "red" )
 ```
 
-4.2. US_ODA_C~polity2
+##### US_ODA_C~polity2
 
 ```{r echo=FALSE}
 ggplot(data = aid2012, aes(x = polity2, y =US_ODA_C)) +
@@ -414,7 +411,7 @@ ggplot(data = aid2012, aes(x = polity2, y =US_ODA_C)) +
     se = FALSE, color = "red" )
 ```
 
-4.3. US_ODA_C~population
+##### US_ODA_C~population
 
 ```{r}
 ggplot(data = aid2012, aes(x = log(population), y = US_ODA_C))+
