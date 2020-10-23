@@ -33,6 +33,10 @@ First, let’s have a look at the data set.
 + `GDP_total_growth_rate`: Recipient's total GDP growth rate, calculated by (this year - previous year)/previous year.
 + `population_growth_rate`: Recipient's Population growth rate, calculated by (this year - previous year)/previous year.
 
+According to the paper "The Effect of Aid on Growth: Evidence from a Quasi-Experiment" by Galiani, we choose GDP growth rate as the measurement for economic impact and incorporate the population growth rate in our model. However, since we would do our analysis for a particular year (2012), we would not follow their model but build our own based on the causal discovery and pre-existing knowledge. 
+
+
+
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
 aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
@@ -619,7 +623,11 @@ We used causal discovery to explore various forms of causal paths and graphs; ho
 
 # Reference
 
-1. Official development assistance (ODA) - Net ODA - OECD Data. (n.d.). Retrieved October 18, 2020, from https://data.oecd.org/oda/net-oda.htm
+1. Galiani, S., Knack, S., Xu, L. C., & Zou, B. (2014). The Effect of Aid on Growth: Evidence from a Quasi-Experiment. SSRN Electronic Journal. https://doi.org/10.2139/ssrn.2400752  
+
+2. Official development assistance (ODA) - Net ODA - OECD Data. (n.d.). Retrieved October 18, 2020, from https://data.oecd.org/oda/net-oda.htm
+
+
 
 
 
