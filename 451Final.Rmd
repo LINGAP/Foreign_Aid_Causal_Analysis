@@ -224,6 +224,10 @@ The colored scatter points don't seem to form a clear pattern. Therefore we DON'
 
 ### Regression Results and Interpretation
 
+We want to see if the variables selected should be linear or not; therefore, we would first investigate the association between the controlled variables and the outcome to decide if we want to introduce non-linearity in our regression. However, we would also build a linear model as comparison for us make a final choice between those two models. 
+
+#### Choice of Linearity for the controlled variables
+
 ##### 1. Population growth rate vs. GDP growth rate
 ```{r}
 ggplot(data = aid2012, aes(x = population_growth_rate, y = GDP_total_growth_rate )) +
@@ -260,12 +264,9 @@ ggplot(data = aid2012, aes(x = polity2, y = GDP_total_growth_rate )) +
     se = FALSE, color = "red" )
 ```
 
+#### Regression Models 
 
-```{r}
-mod<-lm(GDP_total_growth_rate~ as.factor(US_ODA_C), data = aid2012)
-summary(mod)
-confint(mod)
-```
+##### Non-linear regression model
 
 
 ```{r}
@@ -274,12 +275,13 @@ summary(mod1)
 confint(mod1)
 ```
 
+Benefits of Countries which received U.S ODA < 250 million dollars: 0.3742 percent ;
+Benefits of Countries which received U.S ODA > 250 million dollars: 0.3742 -1.4542 = -1.08 percent   
+
+According to our model, if the U.S ODA is smaller than 250 million dollars, then it is expected to contribute to 0.3742 percent GDP growth for the recipient countries in 2012 when we hold other variables as constant; however, if the U.S ODA is greater than 250 million dollars, then the expected GDP growth rate would decrease by 1.08 percent in 2012 holding other variables constant. Yet, the benefits of U.S ODA is insignificant no matter it is greater or less than 250 million dollars in 2012. Even though the benefits of U.S ODA is insignificant in 2012 after we controlled for other variables, we still don't have enough evidence for a causal effect of the U.S ODA because we are not sure if the true causal effect is actually zero. 
 
 
-According to our model, if the U.S ODA is smaller than 250, then it is expected to contribute to 0.3742 percent GDP growth for the recipient countries in 2012 when we hold other variables as constant; however, if the U.S ODA is greater than 250, then the expected GDP growth rate would decrease by 1.08 percent in 2012 holding other variables constant. Yet, the benefits of U.S ODA is insignificant no matter it is greater or less than 250 in 2012.
-
-
-### Evaluation of regression model
+##### Evaluation of regression model
 
 ```{r}
 results <- data.frame(resid = resid(mod1), fitted = fitted(mod1))
@@ -292,10 +294,14 @@ In the residual plot, we can see that the residuals are assigned relatively even
 
 Besides the non-linear model, we also want to investigate the results from the linear model; and we would want to compare the residual plot and the adjusted R squared to see which model we would choose.
 
+##### linear regression model
+
 ```{r}
 linear <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C)+ recipient_trade_world+polity2+population_growth_rate,  data = aid2012)
 summary(linear)
 ```
+
+##### Evaluation of regression model
 
 ```{r}
 results <- data.frame(resid = resid(linear), fitted = fitted(linear))
@@ -310,7 +316,7 @@ We can see that the residual plots of the non-linear model is slightly better th
 
 # Sensivity Analysis
 
-## Another Treatment variable
+#### Another Treatment variable
 Despite the fact that only U.S ODA can directly connect with the outcome according to our causal discovery, it does not necessarily suggest that other variables can not affect the outcome. Therefore, we want to investigate another potential treatment: total amount of U.S aid; and we want to see its impact on the outcome. 
 
 ```{r}
@@ -319,7 +325,7 @@ ggplot(data = aid2012, aes(x = US_aid_total, y = GDP_total_growth_rate))+
   geom_smooth()
 ```
 
-According to the graph, we might still want to cut the U.S aid total at around 250 because there is an increasing trend between 0 and 250. 
+According to the graph, we might still want to cut the U.S aid total at around 250 million dollars because there is an increasing trend between 0 and 250 million dollars. 
 ```{r}
 aid2012 <- aid2012%>%
   mutate(US_aid_total_C = ifelse(US_aid_total<250, 0,1))
@@ -349,8 +355,6 @@ p2 <- ggplot(data = aid2012, aes(x = log(recipient_trade_world), y = GDP_total_g
     se = FALSE, color = "red" )
 ```
 
-Since the trade balance of recipient countries is relative big number compared to the foreign aid, we want to use the natural log of the trade balance so that we are able to see numbers on the same scale; also, our analysis would not misled by the big numbers. In this graph, we can see that the natural log of trade balance of recipient countries is non-linear. 
-
 ##### 3. Politics score vs. GDP growth rate
 
 ```{r}
@@ -373,9 +377,9 @@ summary(mod2)
 confint(mod2)
 ```
 
-As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250, the GDP growth rate would be expected to decrease by 0.5115 percent holding all else constant in 2007. Yet, both benefits are insignificant. The results are consistent with our findings that use U.S ODA as the treatment. 
+As we switch to using the total amount of U.S aid, we can see that when the total aid is smaller than 250 million dollars, the GDP growth rate would be expected to increaseby 0.5556 percent holding all else constant in 2007; however, if the aid is greater than 250 million dollars, the GDP growth rate would be expected to decrease by 0.5115 percent holding all else constant in 2007. Yet, both benefits are insignificant. The results are consistent with our findings that use U.S ODA as the treatment. 
 
-##### 4. Unmeasured Variable
+#### 4. Unmeasured Variable
 
 A common robust test is to see how an unmeasured confounder could affect the result. We recognize that the effect of foreign aid on recipient's economic growth can go through complicated paths, in addition to the ones we showed above. However, due to the lack of data and the complexity of the topic, our causal graph couldn't capture all the plausible causal relationships. Therefore, we particular need to assume the existence of an unmeasured confounder and see how it would affect our prior result.
 
@@ -521,7 +525,7 @@ The black line denotes the ACE(US_ODA that's larger than 250) under the specifie
 
 Therefore, our estimated ACE is quite robust even after considering a various causal flow that passes U, but insignificant.
 
-##### Different Year (2007)
+#### Different Year (2007)
 
 ```{r}
 ggplot(data = aid2007, aes(x = US_ODA, y = GDP_total_growth_rate))+
@@ -530,7 +534,7 @@ ggplot(data = aid2007, aes(x = US_ODA, y = GDP_total_growth_rate))+
 ```
 
 
-According to the graph, we might need to cut US_ODA at around 100 because there is an increasing trend before 100.
+According to the graph, we might need to cut US_ODA at around 100 million dollars because there is an increasing trend before 100 million dollars.
 
 ```{r}
 aid2007 <- aid2007%>%
@@ -585,12 +589,12 @@ summary(mod3)
 confint(mod3)
 ```
 
-When we use the data from 2007, we can see that if the U.S ODA is smaller than 100, the GDP growth rate is expected to increase by 8.49439 percent while we holding other variables as constant; while if the U.S ODA is greater than 100, the GDP growth rate of recipients would be expected to increase by  9.54182 percent holding other variable constant. However, the benefits of U.S ODA (<100) is significant, which is different from our previous results using data from 2012. Also, the additional benefit of larger U.S ODA is also not significant; therefore, we can not conclude that the more the U.S ODA, the greater economic impact it can generate. 
+When we use the data from 2007, we can see that if the U.S ODA is smaller than 100 million dollars, the GDP growth rate is expected to increase by 8.49439 percent while we holding other variables as constant; while if the U.S ODA is greater than 100 million dollars, the GDP growth rate of recipients would be expected to increase by 9.54182 percent holding other variable constant. However, the benefits of U.S ODA (<100 million dollars) is significant, which is different from our previous results using data from 2012. Also, the additional benefit of larger U.S ODA is also not significant; therefore, we can not conclude that the more the U.S ODA, the greater economic impact it can generate. 
 
 It also makes sense that our results differ across different years because the marginal benefit of additional foreign aid is very likely to be different. Since the marginal benefit can differ, then the estimated contribution to the economics should also be different for each year. 
 
 
-##### Another Measurement of Economic growth
+#### Another Measurement of Economic growth
 
 ```{r}
 mod4 <- lm(GDP_per_growth_rate ~ as.factor(US_ODA_C) +ns(log(recipient_trade_world),2)+ns(polity2,3)+ns(population_growth_rate,3),data = aid2012)
@@ -598,7 +602,7 @@ summary(mod4)
 confint(mod4)
 ```
 
-We also switch to another common estimator of economic growth: GDP per capita growth rate. The coefficient of U.S ODA is still not significant and the magnitude remains small; but the only difference is that when U.S ODA is over 250, there is insignificant benefit compared to a U.S ODA smaller than 250. Our results are consistent with the previous findings using GDP growth rate.
+We also switch to another common estimator of economic growth: GDP per capita growth rate, because a large GDP does not imply a large GDP per capita and vice versa; therefore, we want to use GDP per capita to see if our results would change substantially if we use another similar estimate of outcome. The coefficient of U.S ODA is still not significant and the magnitude remains small; but the only difference is that when U.S ODA is over 250 million dollars, there is insignificant benefit compared to a U.S ODA smaller than 250 million dollars. Overall, the benefits of U.S ODA are insignificant for the recipient countries, and this is also consistent with our findings using GDP growth rate.
 
 # Limitations 
 
