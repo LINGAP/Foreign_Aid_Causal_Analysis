@@ -521,7 +521,7 @@ The black line denotes the ACE(US_ODA that's larger than 250) under the specifie
 
 *This is counterintuitive, because usually we would assume more donation results in more obvious economic growth in the recipient's country. A potential explanation we come up with is that poorer pre-aid condition of the recipient results in more donation, but the donation might not be used effectively due to the poor pre-aid condition. For example, according to prior knowledge, the contries receiving the most aid are Iraq, Jordan, Syria, where the political situation is not very stable. We think this might account for the counterintuitive "more donation --> less ideal" effect.*
 
-2. Then what effect could U have? Within each U –> Y assumptioin, the various effect magnitude U –> A seems to result in more obvious negative effect when receiving large donation versus smaller donation. 
+2. Then what effect could U have? Within each U –> Y assumptioin, the various effect magnitude U –> A seems to result in more obvious negative effect when receiving large donation versus smaller donation. Therefore, the greater effect the unmeasured variable has on Y, the less effective large donation will be comparing to small donations.
 
 3. Within each U –> A, in general, the stronger the hypothetical effect of U –> Y, the less negative effect the large donation has on the GDP growth, but the trend is not obvious with small maginitude of U –>A. The confidence interval becomes entirely below 0 for strong U-->A, which means if the unmeasured variable affects the treatment a lot, then we are more confident in our evidence that larger donation results in less ideal GDP growth.
 
@@ -591,7 +591,7 @@ summary(mod3)
 confint(mod3)
 ```
 
-When we use the data from 2007, we can see that if the U.S ODA is smaller than 100 million dollars, the GDP growth rate is expected to increase by 8.49439 percent while we holding other variables as constant; while if the U.S ODA is greater than 100 million dollars, the GDP growth rate of recipients would be expected to increase by 9.54182 percent holding other variable constant. However, the benefits of U.S ODA (<100 million dollars) is significant, which is different from our previous results using data from 2012. Also, the additional benefit of larger U.S ODA is also not significant; therefore, we can not conclude that the more the U.S ODA, the greater economic impact it can generate. 
+When we use the data from 2007, we can see that if the U.S ODA is smaller than 100 million dollars, the GDP growth rate is expected to increase by 1.04743 percent comparing to if the received U.S ODA was greater than 100 million dollars, which is to the contrary of the causal effect in 2012. However, the p-value of the causal effect indicates that the benefit is not significant, similar to the p-value in 2012. It means that even we are inclined to say that in 2007, recipients benefit more from large donations than small donations, we don't have good evidence supporting this claim.
 
 It also makes sense that our results differ across different years because the marginal benefit of additional foreign aid is very likely to be different. Since the marginal benefit can differ, then the estimated contribution to the economics should also be different for each year. 
 
@@ -604,7 +604,9 @@ summary(mod4)
 confint(mod4)
 ```
 
-We also switch to another common estimator of economic growth: GDP per capita growth rate, because a large GDP does not imply a large GDP per capita and vice versa; therefore, we want to use GDP per capita to see if our results would change substantially if we use another similar estimate of outcome. The coefficient of U.S ODA is still not significant and the magnitude remains small; but the only difference is that when U.S ODA is over 250 million dollars, there is insignificant benefit compared to a U.S ODA smaller than 250 million dollars. Overall, the benefits of U.S ODA are insignificant for the recipient countries, and this is also consistent with our findings using GDP growth rate.
+We also switch to another common estimator of economic growth: GDP per capita growth rate, because a large GDP does not imply a large GDP per capita and vice versa; therefore, we want to use GDP per capita to see if our results would change substantially if we use another similar estimate of outcome. 
+
+Interestingly, after adopting GDP per capita as our outcome, the output suggests a 0.06235 percentage increase as a result of receiving large donation versus small donation in 2012. P-value 0.00891 suggests the ACE to be significant, which means we can confidently say large donation does benefit GDP per capita more than smal donation does. 
 
 # Limitations 
 
