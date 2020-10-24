@@ -15,6 +15,8 @@ library(dagitty)
 library("splines")
 ```
 
+According to the paper "The Effect of Aid on Growth: Evidence from a Quasi-Experiment" by Galiani, we choose GDP growth rate as the measurement for economic impact and incorporate the population growth rate in our model. However, since we would do our analysis for a particular year (2012), we would not follow their model but build our own based on the causal discovery and pre-existing knowledge. 
+
 First, let’s have a look at the data set.
 
 + `country`: recipient country
@@ -33,10 +35,6 @@ First, let’s have a look at the data set.
 + `GDP_total_growth_rate`: Recipient's total GDP growth rate, calculated by (this year - previous year)/previous year.
 + `population_growth_rate`: Recipient's Population growth rate, calculated by (this year - previous year)/previous year.
 
-According to the paper "The Effect of Aid on Growth: Evidence from a Quasi-Experiment" by Galiani, we choose GDP growth rate as the measurement for economic impact and incorporate the population growth rate in our model. However, since we would do our analysis for a particular year (2012), we would not follow their model but build our own based on the causal discovery and pre-existing knowledge. 
-
-
-
 ```{r pressure, echo=FALSE}
 aid = read.csv("processed.csv")
 aid$GDP_total_growth_rate = as.double(aid$GDP_total_growth_rate)
@@ -50,7 +48,9 @@ vis_miss(aid,cluster = TRUE)
 ```
 
 we decide to drop the observations that have missing values for the following reason:
+
 1. "MNAR: Missing Not at Random - the missing is not random, it correlates with unobservable characteristics unknown to a researcher." The missing rows gather around the last 400 rows, so we cannot assume the missing is at random. 
+
 2. we can afford to drop 7.7% of the original data as we still have 92.3% data left.
 
 To get away with the time correlated concern, we decide to base our analysis on 2007 and 2012 because they have the least missing data. We conduct analysis on one of them, and use the result of the other one  to compare, which serves as a part of sensitive analysis to test the robustness of the former.
@@ -189,8 +189,8 @@ ggplot(data = aid2012, aes(x = US_ODA, y = GDP_total_growth_rate)) +
 
 From the plot, we can tell `U.S. ODA` and `rest of world ODA` are correlated, which verifies the generated causal graph. Looking at the y-axis of the plot, the ligher colored points mainly gathered at the bottom while darker ones take the upper part. We vaguely get a sense that both world ODA and U.S. ODA positively contribute to GDP total growth rate, but we admit that `rest of world ODA`'s contribution(pattern of the color) is unobvious.
 
-Observing the effect of `U.S. ODA`, we can see that there seem to be an increasing trend between 0-250, and another decreasing trend for US_ODA that's larger than 250. 
-Instead of keep using continuous value for treatment, we decide to cut U.S ODA into two categories: [0,250] and [251,+). 
+Observing the effect of `U.S. ODA`, there seem to be an increasing trend between 0-250, and another decreasing trend for `US_ODA` that's larger than 250. 
+Instead of keep using continuous value for treatment, we decide to cut `U.S ODA` into two categories: [0,250] and [251,+). 
 
 ```{r}
 aid2012 <- aid2012%>%
@@ -255,7 +255,7 @@ ggplot(data = aid2012, aes(x =log(recipient_trade_world), y = GDP_total_growth_r
     se = FALSE, color = "red" )
 ```
 
-Since the trade balance of recipient countries is relative big number compared to the foreign aid, we want to use the natural log of the trade balance so that we are able to see numbers on the same scale; also, our analysis would not misled by the big numbers. In this graph, we can see that the natural log of trade balance of recipient countries is non-linear. 
+Since the trade balance of the recipient countries is a relatively large number compared to the foreign aid, we use the natural log of the trade balance to see numbers on the same scale, so that our analysis would not be misled by the large numbers. In this graph, we use natrual spline to fit the data, and we can tell that the natural log of trade balance of recipient countries is non-linear. 
 
 ##### 3. Politics score vs. GDP growth rate
 
@@ -268,6 +268,8 @@ ggplot(data = aid2012, aes(x = polity2, y = GDP_total_growth_rate )) +
     se = FALSE, color = "red" )
 ```
 
+Similarly, we fit a non-linear model for polity score.
+
 #### Regression Models 
 
 ##### Non-linear regression model
@@ -279,7 +281,7 @@ summary(mod1)
 confint(mod1)
 ```
 
-According to our model, if the U.S ODA is larger than 250 million dollars, then the causal effect of that donation is -1.4542 percent less GDP growth for the recipient countries than if the recipient were going to receive less donation in 2012, when we hold other variables as constant. Yet, the effect of U.S ODA is insignificant becuse the p-value for -1.4542 is 0.13322, which is way higher than conventional p-value thresholds 0.01 or 0.05. It means we are unable to reject the null hypothesis that large donation and small donation don't make a difference in GDP growth of the recipient country. 
+According to our model, if the U.S ODA is larger than 250 million dollars, then the causal effect of that donation is -1.4542 percent less GDP growth for the recipient countries than if the recipient were receiving less donation in 2012, when we hold other variables as constant. Yet, the effect of U.S ODA is insignificant becuse the p-value for -1.4542 is 0.13322, which is way higher than the conventional p-value thresholds 0.01 or 0.05. It means we are unable to reject the null hypothesis that large donation and small donation don't make a difference in GDP growth of the recipient country. 
 
 
 ##### Evaluation of regression model
@@ -302,6 +304,10 @@ linear <- lm(GDP_total_growth_rate~ as.factor(US_ODA_C)+ log(recipient_trade_wor
 summary(linear)
 ```
 
+According to the linear model, if the U.S ODA is larger than 250 million dollars, then the causal effect of that donation is -1.44675 percent less GDP growth for the recipient countries than if the recipient were receiving less donation in 2012, when we hold other variables as constant. Yet, the effect of U.S ODA is insignificant becuse the p-value for -1.44675 is 0.122483, which is way higher than the conventional p-value thresholds. It means we are unable to reject the null hypothesis that large donation and small donation don't make a difference in GDP growth of the recipient country. 
+
+The ACE indicated by the linear model is very close to the non-linear model. Both suggest large donation do not have as good GDP growth as the small donation. We'll discuss this counterintuitive discovery later in *sensitive analysis - unmeasured variable* section.
+
 ##### Evaluation of regression model
 
 ```{r}
@@ -311,7 +317,7 @@ results <- data.frame(resid = resid(linear), fitted = fitted(linear))
           geom_hline(yintercept = 0)
 ```
 
-We can see that the residual plots of the non-linear model is slightly better than that of the linear model because the residuals spread out more randomly. Also, the adjusted R squared is 0.2315 for the non-linear model which is higher than that of the linear model. Since the performance of the non-linear model is better, we would choose the non-linear model for our analysis and sensitivity analysis as well.  
+We can see that the residual plots of the non-linear model is slightly better than that of the linear model because the residuals spread out more randomly. Also, the adjusted R squared is 0.2315 for the non-linear model which is higher than that of the linear model 0.1556 . Since the performance of the non-linear model is better, we would choose the non-linear model for our analysis and sensitivity analysis as well.  
 
 
 
@@ -328,6 +334,7 @@ ggplot(data = aid2012, aes(x = US_aid_total, y = GDP_total_growth_rate))+
 ```
 
 According to the graph, we might still want to cut the U.S aid total at around 250 million dollars because there is an increasing trend between 0 and 250 million dollars. 
+
 ```{r}
 aid2012 <- aid2012%>%
   mutate(US_aid_total_C = ifelse(US_aid_total<250, 0,1))
@@ -626,6 +633,8 @@ We used causal discovery to explore various forms of causal paths and graphs; ho
 1. Galiani, S., Knack, S., Xu, L. C., & Zou, B. (2014). The Effect of Aid on Growth: Evidence from a Quasi-Experiment. SSRN Electronic Journal. https://doi.org/10.2139/ssrn.2400752  
 
 2. Official development assistance (ODA) - Net ODA - OECD Data. (n.d.). Retrieved October 18, 2020, from https://data.oecd.org/oda/net-oda.htm
+
+3. Replication Data for "China, The United States, and Competition in Foreign Aid, Ryan Divers, 2018-05-01,V2, from Harvard Dataverse, https://doi.org/10.7910/DVN/2SMCDZ
 
 
 
